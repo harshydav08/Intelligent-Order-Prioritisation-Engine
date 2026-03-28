@@ -1,6 +1,11 @@
 """
-Intelligent Order Prioritization Engine for B2B Quick Commerce
-Author: Senior ML Engineer
+Order Prioritization Engine for Fairdeal Quick Commerce
+
+This is a scoring system I built to handle the problem: when you get
+way more orders than you can deliver, how do you decide which ones to do first?
+
+The approach is pretty straightforward - score each order based on what matters
+to the business, then fulfill the highest-scoring ones.
 """
 
 import pandas as pd
@@ -11,48 +16,40 @@ import warnings
 warnings.filterwarnings('ignore')
 
 class OrderPrioritizationEngine:
-    """
-    Main engine for intelligent order prioritization in B2B quick commerce.
-    
-    This system implements a multi-factor scoring approach that considers:
-    - Order value and retailer importance
-    - Distance and delivery efficiency
-    - Urgency and SLA requirements
-    - Historical patterns and fairness constraints
-    """
+    """The main class that scores orders and makes fulfillment decisions."""
     
     def __init__(self, capacity_per_hour: int = 50):
-        """
-        Initialize the prioritization engine.
-        
-        Args:
-            capacity_per_hour: Maximum orders that can be fulfilled per hour
-        """
+        """Initialize the engine with how many orders we can handle per hour."""
         self.capacity_per_hour = capacity_per_hour
         
-        # Configurable weights for scoring formula
+        # The weights I came up with after thinking about what actually matters
+        # Order value drives revenue (25%), but retailer relationships matter too (20%)
+        # Time is critical - urgency and fairness both get 20% combined
+        # Distance costs money and time (15%)
         self.weights = {
-            'order_value': 0.25,
-            'retailer_importance': 0.20,
-            'urgency_factor': 0.20,
-            'distance_penalty': 0.15,
-            'frequency_bonus': 0.10,
-            'fairness_boost': 0.10
+            'order_value': 0.25,           # How much $$$ 
+            'retailer_importance': 0.20,   # How valuable is this customer?
+            'urgency_factor': 0.20,        # Is the deadline approaching?
+            'distance_penalty': 0.15,      # Is it nearby or across the city?
+            'frequency_bonus': 0.10,       # Do they order a lot?
+            'fairness_boost': 0.10         # Have we ignored them lately?
         }
         
-        # SLA thresholds (hours)
+        # Different customer tiers have different delivery promises
+        # Premium shops (big chains) get 2 hours, small shops get 8 hours
         self.sla_thresholds = {
-            'premium': 2,    # Premium retailers: 2 hour SLA
-            'standard': 4,   # Standard retailers: 4 hour SLA
-            'basic': 8       # Basic retailers: 8 hour SLA
+            'premium': 2,    # Big retailers, we promised fast
+            'standard': 4,   # Medium retailers
+            'basic': 8       # Smaller shops, more flexible
         }
         
-        # Distance zones for efficiency optimization
+        # Distance affects logistics cost. I split into zones to make
+        # penalties more realistic than a pure linear model
         self.distance_zones = {
-            'local': (0, 5),      # 0-5 km
-            'nearby': (5, 15),    # 5-15 km
-            'distant': (15, 30),  # 15-30 km
-            'far': (30, float('inf'))  # 30+ km
+            'local': (0, 5),      # Same area - cheap
+            'nearby': (5, 15),    # Within city - normal cost
+            'distant': (15, 30),  # Far side of city - expensive
+            'far': (30, float('inf'))  # Outliers - very expensive
         }
     
     def engineer_features(self, orders_df: pd.DataFrame) -> pd.DataFrame:
