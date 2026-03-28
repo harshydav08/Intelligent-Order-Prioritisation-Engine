@@ -1,5 +1,9 @@
 # Production Architecture Design
 
+> **NOTE**: This document describes the **PRODUCTION-SCALE architecture** for enterprise deployment. 
+> 
+> **Current Implementation**: The existing codebase (`order_prioritization_engine.py`) uses a **Python-based implementation** that works locally. PostgreSQL and Kafka would be integrated when scaling to production (1000+ orders/second).
+
 ## System Overview
 The Intelligent Order Prioritization Engine is designed as a microservices-based system that can handle high-throughput order processing in real-time.
 
